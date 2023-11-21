@@ -41,7 +41,14 @@ impl Grep {
             self.input.chars().any(|c| c.is_alphanumeric())
         } else if self.pattern == "\\s" {
             self.input.chars().any(|c| c.is_whitespace())
-        } else {
+        } else if self.pattern.starts_with("[") {
+            self.pattern
+                .chars()
+                .skip(1)
+                .take_while(|c| *c != ']')
+                .any(|c| self.input.contains(c))
+        }
+        else {
             panic!("Unhandled pattern: {}", self.pattern)
         }
     }

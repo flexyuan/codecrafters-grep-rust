@@ -42,7 +42,7 @@ impl Grep {
         } else if self.pattern == "\\s" {
             self.input.chars().any(|c| c.is_whitespace())
         } else if self.pattern.starts_with("[") {
-            if(self.pattern.chars().nth(1).unwrap() == '^') {
+            if self.pattern.chars().nth(1).unwrap() == '^' {
                 self.pattern
                     .chars()
                     .skip(2)

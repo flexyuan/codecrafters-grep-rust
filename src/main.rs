@@ -34,7 +34,13 @@ struct Grep {
 impl Grep {
     fn is_match(&self) -> bool {
         if self.pattern.chars().count() == 1 {
-            return self.input.contains(&self.pattern);
+            self.input.contains(&self.pattern)
+        } else if self.pattern == "\\d" {
+            self.input.chars().any(|c| c.is_digit(10))
+        } else if self.pattern == "\\w" {
+            self.input.chars().any(|c| c.is_alphanumeric())
+        } else if self.pattern == "\\s" {
+            self.input.chars().any(|c| c.is_whitespace())
         } else {
             panic!("Unhandled pattern: {}", self.pattern)
         }

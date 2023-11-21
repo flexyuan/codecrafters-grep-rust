@@ -42,11 +42,19 @@ impl Grep {
         } else if self.pattern == "\\s" {
             self.input.chars().any(|c| c.is_whitespace())
         } else if self.pattern.starts_with("[") {
-            self.pattern
-                .chars()
-                .skip(1)
-                .take_while(|c| *c != ']')
-                .any(|c| self.input.contains(c))
+            if(self.pattern.chars().nth(1).unwrap() == '^') {
+                self.pattern
+                    .chars()
+                    .skip(2)
+                    .take_while(|c| *c != ']')
+                    .all(|c| !self.input.contains(c))
+            } else {
+                self.pattern
+                    .chars()
+                    .skip(1)
+                    .take_while(|c| *c != ']')
+                    .any(|c| self.input.contains(c))
+            }
         }
         else {
             panic!("Unhandled pattern: {}", self.pattern)

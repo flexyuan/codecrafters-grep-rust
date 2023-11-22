@@ -43,10 +43,24 @@ impl Grep {
 
         let characters = self.input.chars().collect::<Vec<char>>();
 
+        if nodes.len() == 0 {
+            return true;
+        }
+        if let NodeType::Start = nodes[0] {
+            return Grep::is_pattern_match(&nodes[1..], &characters, 0);
+        }
+        if let NodeType::End = nodes[nodes.len() - 1] {
+            return Grep::is_pattern_match(
+                &nodes[0..nodes.len() - 1],
+                &characters,
+                characters.len() - 1,
+            );
+        }
+
         (0..characters.len()).any(|index| Grep::is_pattern_match(&nodes, &characters, index))
     }
 
-    fn is_pattern_match(nodes: &Vec<NodeType>, characters: &Vec<char>, index: usize) -> bool {
+    fn is_pattern_match(nodes: &[NodeType], characters: &Vec<char>, index: usize) -> bool {
         let mut current = index;
         let mut node_index = 0;
         loop {
@@ -89,6 +103,7 @@ impl Grep {
                         return false;
                     }
                 }
+                _ => panic!("Unexpected node type: {:?}", nodes[node_index])
             }
             current += 1;
             node_index += 1;
@@ -105,6 +120,8 @@ enum NodeType {
     AnyChar,
     AnyCharIn(Vec<char>),
     AnyCharNotIn(Vec<char>),
+    Start,
+    End,
 }
 
 struct NodeParser {
@@ -162,6 +179,8 @@ impl NodeParser {
                         result.push(NodeType::AnyCharIn(chars));
                     }
                 }
+                '^' => result.push(NodeType::Start),
+                '$' => result.push(NodeType::End),
                 _ => result.push(NodeType::Literal(c)),
             }
             self.index += 1;
@@ -180,7 +199,13 @@ mod test {
             pattern: pattern.to_string(),
             input: input.to_string(),
         };
-        assert_eq!(grep.is_match(), expected, "pattern: {}, input: {}", pattern, input);
+        assert_eq!(
+            grep.is_match(),
+            expected,
+            "pattern: {}, input: {}",
+            pattern,
+            input
+        );
     }
 
     #[test]
@@ -201,12 +226,14 @@ mod test {
 
     #[test]
     fn grep_sample_pattern() {
-        test_grep(r"\d", "apple123" , true);
-        test_grep(r"\w","alpha-num3ric",true);
+        test_grep(r"\d", "apple123", true);
+        test_grep(r"\w", "alpha-num3ric", true);
         test_grep("[abc]", "apple", true);
         test_grep("[^abc]", "apple", true);
         test_grep(r"\d apple", "1 apple", true);
         test_grep(r"\d apple", "x apple", false);
+        test_grep("^log", "log", true);
+        test_grep("^log", "1log", false);
+        
     }
-
 }

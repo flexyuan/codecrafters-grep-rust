@@ -46,21 +46,10 @@ impl Grep {
         if nodes.len() == 0 {
             return true;
         }
-        if let NodeType::Start = nodes[0] {
-            return Grep::is_pattern_match(&nodes[1..], &characters, 0);
-        }
-        if let NodeType::End = nodes[nodes.len() - 1] {
-            return Grep::is_pattern_match(
-                &nodes[0..nodes.len() - 1],
-                &characters,
-                characters.len() - 1,
-            );
-        }
-
         (0..characters.len()).any(|index| Grep::is_pattern_match(&nodes, &characters, index))
     }
 
-    fn is_pattern_match(nodes: &[NodeType], characters: &Vec<char>, index: usize) -> bool {
+    fn is_pattern_match(nodes: &[NodeType], characters: &[char], index: usize) -> bool {
         let mut current = index;
         let mut node_index = 0;
         loop {
@@ -68,44 +57,68 @@ impl Grep {
                 return true;
             }
             if current >= characters.len() {
+                if let NodeType::End = nodes[node_index] {
+                    if node_index == nodes.len() - 1 {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
                 return false;
             }
 
+            let current_char = characters[current];
+
             match nodes[node_index] {
+                NodeType::Start => {
+                    if index != 0 {
+                        return false;
+                    }
+                }
+                NodeType::End => {
+                    return false;
+                }
                 NodeType::Literal(c) => {
-                    if characters[current] != c {
+                    current += 1;
+                    if current_char != c {
                         return false;
                     }
                 }
                 NodeType::AnyDigit => {
-                    if !characters[current].is_digit(10) {
+                    current += 1;
+                    if !current_char.is_digit(10) {
                         return false;
                     }
                 }
                 NodeType::AnyWord => {
-                    if !characters[current].is_alphanumeric() {
+                    current += 1;
+                    if !current_char.is_alphanumeric() {
                         return false;
                     }
                 }
+
                 NodeType::AnyWhitespace => {
-                    if !characters[current].is_whitespace() {
+                    current += 1;
+                    if !current_char.is_whitespace() {
                         return false;
                     }
                 }
-                NodeType::AnyChar => {}
+                NodeType::AnyChar => {
+                    current += 1;
+                }
                 NodeType::AnyCharIn(ref chars) => {
-                    if !chars.contains(&characters[current]) {
+                    current += 1;
+                    if !chars.contains(&current_char) {
                         return false;
                     }
                 }
                 NodeType::AnyCharNotIn(ref chars) => {
-                    if chars.contains(&characters[current]) {
+                    current += 1;
+                    if chars.contains(&current_char) {
                         return false;
                     }
                 }
-                _ => panic!("Unexpected node type: {:?}", nodes[node_index])
             }
-            current += 1;
             node_index += 1;
         }
     }
@@ -234,6 +247,8 @@ mod test {
         test_grep(r"\d apple", "x apple", false);
         test_grep("^log", "log", true);
         test_grep("^log", "1log", false);
-        
+        test_grep("dog$", "dog", true);
+        test_grep("dog$", "dog1", false);
+        test_grep("^dog$", "dog", true);
     }
 }

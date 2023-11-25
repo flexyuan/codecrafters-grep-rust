@@ -45,9 +45,9 @@ impl Grep {
 
         let modified_input = format!("{}{}{}", SPECIAL_MARKER, self.input, SPECIAL_MARKER);
         let modified_pattern = Pattern::Sequence(vec![
-            Pattern::KleeneStar(Box::new(Pattern::AnyChar)),
+            Pattern::KleeneStar(Box::new(Pattern::Literal(SPECIAL_MARKER))),
             pattern,
-            Pattern::KleeneStar(Box::new(Pattern::AnyChar)),
+            Pattern::KleeneStar(Box::new(Pattern::Literal(SPECIAL_MARKER))),
         ]);
         println!("modified_pattern: {:?}", modified_pattern);
         let mut nfa_builder = NfaBuilder::new();

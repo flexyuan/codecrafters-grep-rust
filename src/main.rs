@@ -7,7 +7,7 @@ use std::vec;
 
 // Usage: echo <input_text> | your_grep.sh -E <pattern>
 
-const SPECIAL_MARKER: char = '\x01';
+const SPECIAL_MARKER: char = '\u{0000}';
 
 fn main() -> ExitCode {
     if env::args().nth(1).unwrap() != "-E" {
@@ -25,6 +25,7 @@ fn main() -> ExitCode {
         input: input_line,
     };
     if grep.is_match() {
+        print!("match");
         ExitCode::from(0)
     } else {
         ExitCode::from(1)
@@ -45,9 +46,9 @@ impl Grep {
 
         let modified_input = format!("{}{}{}", SPECIAL_MARKER, self.input, SPECIAL_MARKER);
         let modified_pattern = Pattern::Sequence(vec![
-            Pattern::KleeneStar(Box::new(Pattern::Literal(SPECIAL_MARKER))),
+            Pattern::KleeneStar(Box::new(Pattern::AnyChar)),
             pattern,
-            Pattern::KleeneStar(Box::new(Pattern::Literal(SPECIAL_MARKER))),
+            Pattern::KleeneStar(Box::new(Pattern::AnyChar)),
         ]);
         println!("modified_pattern: {:?}", modified_pattern);
         let mut nfa_builder = NfaBuilder::new();
@@ -229,7 +230,13 @@ impl std::fmt::Debug for Nfa {
             let state = self.states.get(state_id).unwrap();
             for (input, next_state) in state.transition.iter() {
                 let input_str = match input {
-                    StateInput::Literal(c) => format!("{}", c),
+                    StateInput::Literal(c) => {
+                        if *c == SPECIAL_MARKER {
+                            "SPECIAL_MARKER".to_string()
+                        } else {
+                            format!("{}", c)
+                        }
+                    }
                     StateInput::AnyDigit => r"\d".to_string(),
                     StateInput::AnyChar => ".".to_string(),
                     StateInput::AnyCharIn(chars) => {
@@ -548,7 +555,7 @@ impl NfaRunner {
             for (input, next_state) in state.transition.iter() {
                 match input {
                     StateInput::Literal(literal) => {
-                        if literal == &c {
+                        if *literal == c {
                             new_states.push(*next_state);
                         }
                     }
@@ -566,7 +573,7 @@ impl NfaRunner {
                         }
                     }
                     StateInput::AnyCharNotIn(chars) => {
-                        if !chars.contains(&c) {
+                        if !chars.contains(&c) && c != SPECIAL_MARKER {
                             new_states.push(*next_state);
                         }
                     }
@@ -665,5 +672,6 @@ mod test {
         test_grep("dog$", "dog1", false);
         test_grep("^dog$", "dog", true);
         test_grep("ca+ts", "caaaats", true);
+        test_grep("[^anb]", "banana", false);
     }
 }
